@@ -40,7 +40,7 @@ expenses = expenses[(expenses["date"] >= pd.to_datetime(start_date)) &
                     (expenses["date"] <= pd.to_datetime(end_date))]
 income = income[(income["date"] >= pd.to_datetime(start_date)) &
                 (income["date"] <= pd.to_datetime(end_date))]
-# METRICS 
+# Metrics
 total_expenses = expenses["amount"].sum()
 total_income = income["amount"].sum()
 profit = total_income - total_expenses
