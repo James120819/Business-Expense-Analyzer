@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
-# ---------- PAGE CONFIG ----------
+# Page
 st.set_page_config(
     page_title="Business Expense Analyzer",
     layout="wide",
@@ -9,7 +9,7 @@ st.set_page_config(
 )
 st.title("📊 Business Expense Analyzer")
 st.caption("Analyze real income & expenses from your small business (built for Merriness Fortune).")
-# ---------- HELPER: LOAD DATA ----------
+# Helper: Load Data 
 @st.cache_data
 def load_csv(path):
     try:
@@ -26,7 +26,7 @@ income = load_csv("data/income.csv")
 if expenses.empty and income.empty:
     st.error("No data available. Check your CSV files in /data folder.")
     st.stop()
-# ---------- SIDEBAR FILTERS ----------
+# Sidebar Filters
 st.sidebar.header("Filters")
 # Date range filter
 min_date = min(expenses["date"].min(), income["date"].min())
@@ -40,7 +40,7 @@ expenses = expenses[(expenses["date"] >= pd.to_datetime(start_date)) &
                     (expenses["date"] <= pd.to_datetime(end_date))]
 income = income[(income["date"] >= pd.to_datetime(start_date)) &
                 (income["date"] <= pd.to_datetime(end_date))]
-# ---------- METRICS ----------
+# METRICS 
 total_expenses = expenses["amount"].sum()
 total_income = income["amount"].sum()
 profit = total_income - total_expenses
@@ -49,7 +49,7 @@ col1.metric("Total Income", f"${total_income:,.2f}")
 col2.metric("Total Expenses", f"${total_expenses:,.2f}")
 col3.metric("Profit", f"${profit:,.2f}", delta=f"{profit:,.2f}")
 st.markdown("---")
-# ---------- EXPENSE BREAKDOWN ----------
+# Expense Breakdown
 if "category" in expenses.columns:
     st.subheader("💸 Expense Breakdown by Category")
     category_totals = expenses.groupby("category")["amount"].sum()
@@ -64,13 +64,13 @@ if "category" in expenses.columns:
 else:
     st.info("Your expenses.csv file needs a 'category' column to display breakdown charts.")
 st.markdown("---")
-# ---------- INCOME OVER TIME ----------
+# Income Over Time
 if "date" in income.columns and "amount" in income.columns:
     st.subheader("📈 Income Over Time")
     income_time = income.set_index("date")["amount"].sort_index()
     st.line_chart(income_time)
 st.markdown("---")
-# ---------- RAW DATA ----------
+# Raw Data
 st.subheader("📂 Raw Data")
 tab1, tab2 = st.tabs(["Expenses", "Income"])
 with tab1:
