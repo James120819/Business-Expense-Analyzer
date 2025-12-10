@@ -30,6 +30,7 @@ and it demonstrates practical skills in Python, data analysis, and dashboard dev
 - Streamlit / web UI framework
 - Pandas / data analysis
 - Matplotlib / visualization
+- SQLite / SQL database
 
 
 # Project Structure
