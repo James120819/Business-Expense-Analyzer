@@ -3,7 +3,8 @@ import sqlite3
 import pandas as pd
 import matplotlib.pyplot as plt
 import streamlit as st
-# ===================== CONFIG =====================
+
+# CONFIG 
 DB_PATH = "business.db"
 st.set_page_config(
     page_title="Business Expense Analyzer",
@@ -15,7 +16,8 @@ st.caption(
     "SQL-backed dashboard for analyzing real income and expenses "
     "from my small business (Merriness Fortune)."
 )
-# ===================== DB HELPERS =====================
+
+# DB Helpers
 def get_connection():
     """Create a connection to the SQLite database."""
     return sqlite3.connect(DB_PATH)
@@ -36,7 +38,8 @@ def init_db():
     """
     conn = get_connection()
     cur = conn.cursor()
-    # ----- Create tables -----
+    
+    # Create tables 
     cur.execute(
         """
         CREATE TABLE IF NOT EXISTS expenses (
@@ -48,6 +51,7 @@ def init_db():
         )
         """
     )
+    
     # income table supports category as well
     cur.execute(
         """
@@ -61,19 +65,22 @@ def init_db():
         )
         """
     )
-    # ----- Check if tables have data -----
+    
+    #  Check if tables have data 
     cur.execute("SELECT COUNT(*) FROM expenses")
     expenses_count = cur.fetchone()[0]
     cur.execute("SELECT COUNT(*) FROM income")
     income_count = cur.fetchone()[0]
-    # ----- Seed expenses from CSV if empty -----
+    
+    # Seed expenses from CSV if empty 
     if expenses_count == 0 and os.path.exists("data/expenses.csv"):
         exp_df = pd.read_csv("data/expenses.csv")
         exp_df = ensure_columns(
             exp_df, ["date", "category", "description", "amount"]
         )
         exp_df.to_sql("expenses", conn, if_exists="append", index=False)
-    # ----- Seed income from CSV if empty -----
+    
+    # Seed income from CSV if empty 
     if income_count == 0 and os.path.exists("data/income.csv"):
         inc_df = pd.read_csv("data/income.csv")
         inc_df = ensure_columns(
@@ -94,7 +101,7 @@ def load_table(table_name: str) -> pd.DataFrame:
 def refresh_data():
     """Clear cache and reload tables."""
     load_table.clear()  # clears streamlit cache for this function
-# ===================== INITIALIZE & LOAD =====================
+#  Initialize & Load
 init_db()
 expenses = load_table("expenses")
 income = load_table("income")
@@ -113,7 +120,8 @@ if "id" in income.columns:
     income_display = income.drop(columns=["id"])
 else:
     income_display = income.copy()
-# ===================== SIDEBAR FILTERS =====================
+
+#  Sidebar Filters
 st.sidebar.header("Filters")
 dates = []
 if not expenses.empty:
@@ -137,7 +145,7 @@ income_filtered = income[
     (income["date"] >= pd.to_datetime(start_date))
     & (income["date"] <= pd.to_datetime(end_date))
 ]
-# ===================== METRICS =====================
+#  Metrics
 total_expenses = float(expenses_filtered["amount"].sum()) if not expenses_filtered.empty else 0.0
 total_income = float(income_filtered["amount"].sum()) if not income_filtered.empty else 0.0
 profit = total_income - total_expenses
@@ -146,7 +154,7 @@ col1.metric("Total Income", f"${total_income:,.2f}")
 col2.metric("Total Expenses", f"${total_expenses:,.2f}")
 col3.metric("Profit", f"${profit:,.2f}", delta=f"{profit:,.2f}")
 st.markdown("---")
-# ===================== EXPENSE BREAKDOWN =====================
+# Expense Breakdown
 if (
     not expenses_filtered.empty
     and "category" in expenses_filtered.columns
@@ -164,7 +172,7 @@ if (
 else:
     st.info("No categorized expenses available for the selected date range.")
 st.markdown("---")
-# ===================== INCOME OVER TIME =====================
+#  Income Over Time
 if not income_filtered.empty and "date" in income_filtered.columns:
     st.subheader("📈 Income Over Time")
     income_time = income_filtered.set_index("date")["amount"].sort_index()
@@ -172,7 +180,7 @@ if not income_filtered.empty and "date" in income_filtered.columns:
 else:
     st.info("No income records available for the selected date range.")
 st.markdown("---")
-# ===================== RAW DATA =====================
+#  Raw Data
 st.subheader("📂 Raw Data (from SQLite database)")
 tab1, tab2 = st.tabs(["Expenses", "Income"])
 with tab1:
@@ -184,10 +192,10 @@ with tab2:
     df_inc = income_filtered.drop(columns=["id"]) if "id" in income_filtered.columns else income_filtered
     st.dataframe(df_inc)
 st.markdown("---")
-# ===================== MANAGE DATA (CRUD) =====================
+#  Manage Data (CRUD) 
 st.subheader("🛠 Manage Data")
 manage_tab_exp, manage_tab_inc = st.tabs(["Manage Expenses", "Manage Income"])
-# ---------- MANAGE EXPENSES ----------
+#  Manage Expenses 
 with manage_tab_exp:
     st.markdown("### ➕ Add New Expense")
     with st.form("add_expense_form"):
@@ -206,7 +214,7 @@ with manage_tab_exp:
             conn.close()
             refresh_data()
             st.success("Expense added successfully.")
-            st.experimental_rerun()
+            st.rerun()
     st.markdown("### ✏️ Edit or 🗑 Delete Expense")
     if not expenses.empty and "id" in expenses.columns:
         # Build label map for the selectbox
@@ -239,7 +247,7 @@ with manage_tab_exp:
                 conn.close()
                 refresh_data()
                 st.success("Expense updated successfully.")
-                st.experimental_rerun()
+                st.rerun()
         if st.button("🗑 Delete Selected Expense"):
             conn = get_connection()
             conn.execute("DELETE FROM expenses WHERE id=?", (int(selected_expense_id),))
@@ -247,10 +255,10 @@ with manage_tab_exp:
             conn.close()
             refresh_data()
             st.warning("Expense deleted.")
-            st.experimental_rerun()
+            st.rerun()
     else:
         st.info("No expenses available to manage.")
-# ---------- MANAGE INCOME ----------
+#  Manage Income
 with manage_tab_inc:
     st.markdown("### ➕ Add New Income")
     with st.form("add_income_form"):
@@ -270,7 +278,7 @@ with manage_tab_inc:
             conn.close()
             refresh_data()
             st.success("Income record added successfully.")
-            st.experimental_rerun()
+            st.rerun()
     st.markdown("### ✏️ Edit or 🗑 Delete Income")
     if not income.empty and "id" in income.columns:
         # Build label map for income selectbox
@@ -311,7 +319,7 @@ with manage_tab_inc:
                 conn.close()
                 refresh_data()
                 st.success("Income record updated successfully.")
-                st.experimental_rerun()
+                st.rerun()
         if st.button("🗑 Delete Selected Income"):
             conn = get_connection()
             conn.execute("DELETE FROM income WHERE id=?", (int(selected_income_id),))
@@ -319,7 +327,7 @@ with manage_tab_inc:
             conn.close()
             refresh_data()
             st.warning("Income record deleted.")
-            st.experimental_rerun()
+            st.rerun()
     else:
         st.info("No income records available to manage.")
 
