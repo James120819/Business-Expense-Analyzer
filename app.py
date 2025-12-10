@@ -2,20 +2,25 @@ import os
 import sqlite3
 import pandas as pd
 import matplotlib.pyplot as plt
+
 import streamlit as st
-# ===================== CONFIG =====================
+# Config
 DB_PATH = "business.db"
+
+# Page
+
 st.set_page_config(
     page_title="Business Expense Analyzer",
     layout="wide",
     page_icon="📊"
 )
 st.title("📊 Business Expense Analyzer")
+
 st.caption(
     "SQL-backed dashboard for analyzing real income and expenses "
     "from my small business (Merriness Fortune)."
 )
-# ===================== DB HELPERS =====================
+#  DB Helpers
 def get_connection():
     """Create a connection to the SQLite database."""
     return sqlite3.connect(DB_PATH)
@@ -83,6 +88,10 @@ def init_db():
         inc_df.to_sql("income", conn, if_exists="append", index=False)
     conn.commit()
     conn.close()
+
+st.caption("Analyze real income & expenses from your small business (built for Merriness Fortune).")
+# Helper: Load Data 
+
 @st.cache_data
 def load_table(table_name: str) -> pd.DataFrame:
     """Load a table from SQLite into a pandas DataFrame."""
@@ -92,7 +101,7 @@ def load_table(table_name: str) -> pd.DataFrame:
     if "date" in df.columns:
         df["date"] = pd.to_datetime(df["date"])
     return df
-# ===================== INITIALIZE & LOAD =====================
+#  Initialize & Load
 init_db()
 expenses = load_table("expenses")
 income = load_table("income")
@@ -102,6 +111,7 @@ if expenses.empty and income.empty:
         "in the /data folder."
     )
     st.stop()
+
 # drop id column for display
 if "id" in expenses.columns:
     expenses_display = expenses.drop(columns=["id"])
@@ -111,7 +121,10 @@ if "id" in income.columns:
     income_display = income.drop(columns=["id"])
 else:
     income_display = income.copy()
-# ===================== SIDEBAR FILTERS =====================
+
+
+# Sidebar Filters
+
 st.sidebar.header("Filters")
 dates = []
 if not expenses.empty:
@@ -126,6 +139,7 @@ start_date = st.sidebar.date_input("Start Date", min_date)
 end_date = st.sidebar.date_input("End Date", max_date)
 if start_date > end_date:
     st.sidebar.error("Start date must be before end date.")
+
 # filter by date
 expenses_filtered = expenses[
     (expenses["date"] >= pd.to_datetime(start_date))
@@ -135,20 +149,36 @@ income_filtered = income[
     (income["date"] >= pd.to_datetime(start_date))
     & (income["date"] <= pd.to_datetime(end_date))
 ]
-# ===================== METRICS =====================
+
+# Metrics
+
 total_expenses = float(expenses_filtered["amount"].sum()) if not expenses_filtered.empty else 0.0
 total_income = float(income_filtered["amount"].sum()) if not income_filtered.empty else 0.0
+
+# Apply filter
+expenses = expenses[(expenses["date"] >= pd.to_datetime(start_date)) &
+                    (expenses["date"] <= pd.to_datetime(end_date))]
+income = income[(income["date"] >= pd.to_datetime(start_date)) &
+                (income["date"] <= pd.to_datetime(end_date))]
+# Metrics
+total_expenses = expenses["amount"].sum()
+total_income = income["amount"].sum()
+
 profit = total_income - total_expenses
 col1, col2, col3 = st.columns(3)
 col1.metric("Total Income", f"${total_income:,.2f}")
 col2.metric("Total Expenses", f"${total_expenses:,.2f}")
 col3.metric("Profit", f"${profit:,.2f}", delta=f"{profit:,.2f}")
 st.markdown("---")
-# ===================== EXPENSE BREAKDOWN =====================
+
+# Expense Breakdown
 if (
     not expenses_filtered.empty
     and "category" in expenses_filtered.columns
 ):
+
+ if "category" in expenses.columns:
+
     st.subheader("💸 Expense Breakdown by Category")
     category_totals = expenses_filtered.groupby("category")["amount"].sum()
     left, right = st.columns([1, 1.2])
@@ -162,8 +192,12 @@ if (
 else:
     st.info("No categorized expenses available for the selected date range.")
 st.markdown("---")
-# ===================== INCOME OVER TIME =====================
+
+# Income Overtime
 if not income_filtered.empty and "date" in income_filtered.columns:
+
+ if "date" in income.columns and "amount" in income.columns:
+
     st.subheader("📈 Income Over Time")
     income_time = income_filtered.set_index("date")["amount"].sort_index()
     st.line_chart(income_time)
@@ -171,8 +205,12 @@ else:
     st.info("No income records available for the selected date range.")
 st.markdown("---")
 
-# ===================== RAW DATA =====================
+
+# Raw Data
 st.subheader("📂 Raw Data (from SQLite database)")
+
+st.subheader("📂 Raw Data")
+
 tab1, tab2 = st.tabs(["Expenses", "Income"])
 with tab1:
     st.write("Filtered Expenses Data")
